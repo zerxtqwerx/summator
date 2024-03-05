@@ -16,8 +16,8 @@ public class RR : MonoBehaviour
     int b = 0;
     int sum;
     string binarySum = "000000000";
-    List<bool> sum1;
-    List<bool> sum2;
+    List<bool> n1;
+    List<bool> n2;
     List<bool> res;
 
     struct SP_output
@@ -36,35 +36,68 @@ public class RR : MonoBehaviour
     {
         AS = gameObject.transform.GetComponent<AudioSource>();
         AS.Stop();
+        res = new List<bool>();
     }
 
     public void Click()
     {
-        sum = a + b;
-        Perevod(a);
-        Perevod(b);
-        ChangeZnak();
-        ChangeGO();
-        if (!AS.isPlaying)
+        //sum = a + b;
+        //Perevod(a);
+        //Perevod(b);
+        if ((a + b >= 0 && a + b <= 127) || (a + b < 0 && a + b > -128))
         {
-            AS.time = 0.0f;
-            AS.Play();
+            n1 = DecToBin(a);
+            n2 = DecToBin(b);
+
+            for (int i = 7; i != -1; i--)
+            {
+                bool p = false;
+                res.Add(Adder(n1[i], n2[i], p).s);
+                Debug.Log(res[res.Count - 1]);
+            }
+            while (res.Count != 8)
+            {
+                res.Add(false);
+            }
+            res.Reverse();
+
+            if (a + b < 0)
+            {
+                res[0] = true;
+            }
+
+            ChangeZnak();
+            ChangeGO();
+            if (!AS.isPlaying)
+            {
+                AS.time = 0.0f;
+                AS.Play();
+            }
+        }
+        else
+        {
+            //сделать табличку переполнение
         }
     }
 
-    void DecToBin(int a)
+    List<bool> DecToBin(int a)
     {
+        List<bool> res = new List<bool>();
         int s = Math.Abs(a);
-        int count = 8;
         while(s > 0)
         {
             if (s % 2 == 0)
-                sum2[count] = false;
+                res.Add(false);
             else
-                sum2[count] = true;
-            count--;
+                res.Add(true);
             s /= 2;
         }
+        while(res.Count != 8)
+        {
+            res.Add(false);
+        }
+        res.Reverse();
+        return res;
     }
     bool xor(bool a, bool b)
     {
@@ -97,7 +130,7 @@ public class RR : MonoBehaviour
     List<bool> Perevod(int a)
     {
         int s = Math.Abs(a);
-        int count = 7;
+        int count = 0;
         List<bool> res = new List<bool>();
         while(s > 0)
         {
@@ -105,9 +138,10 @@ public class RR : MonoBehaviour
                 res[count] = false;
             else
                 res[count] = true;
-            count--;
+            count++;
             s /= 2;
         }
+        res.Reverse();
 
         /*if(binarySum.Length < go.Count)
         {
@@ -143,7 +177,7 @@ public class RR : MonoBehaviour
 
     void ChangeZnak()
     {
-        if (binarySum[0] == '0')
+        if (res[0] == false)
         {
             znak.transform.GetChild(0).GetComponent<Image>().enabled = true;
             znak.transform.GetChild(1).GetComponent<Image>().enabled = false;
@@ -159,7 +193,7 @@ public class RR : MonoBehaviour
     {
         for(int i = 0; i < go.Count; i++)
         {
-            if (binarySum[i+1] == '0')
+            if (res[i+1] == false)
             {
                 go[i].transform.GetChild(2).GetComponent<RawImage>().enabled = true;
                 go[i].transform.GetChild(3).GetComponent<RawImage>().enabled = false;
