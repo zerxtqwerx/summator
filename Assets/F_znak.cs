@@ -5,11 +5,12 @@ using UnityEngine.UI;
 
 public class F_znak : MonoBehaviour
 {
-    public bool flag;
+    public Image line;
     
     void Start()
     {
-        gameObject.transform.GetChild(0).GetComponent<Image>().enabled = false;
-        gameObject.transform.GetChild(1).GetComponent<Image>().enabled = false;
+        gameObject.transform.GetChild(2).GetComponent<RawImage>().enabled = false;
+        gameObject.transform.GetChild(3).GetComponent<RawImage>().enabled = false;
+        line.enabled = false;
     }
 }

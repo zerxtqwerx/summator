@@ -11,6 +11,11 @@ public class RR : MonoBehaviour
     public InputField if1;
     public InputField if2;
     static AudioSource AS;
+    public GameObject overflow;
+    public Text binNum1;
+    public Text binNum2;
+    public Text decSum;
+    public Image line;
 
     int a = 0;
     int b = 0;
@@ -19,6 +24,7 @@ public class RR : MonoBehaviour
     List<bool> n1;
     List<bool> n2;
     List<bool> res;
+
 
     struct SP_output
     {
@@ -34,25 +40,37 @@ public class RR : MonoBehaviour
 
     void Start()
     {
+        overflow.SetActive(false);
         AS = gameObject.transform.GetComponent<AudioSource>();
         AS.Stop();
         res = new List<bool>();
+        line.enabled = false;
+        znak.transform.GetChild(2).GetComponent<RawImage>().enabled = false;
+        znak.transform.GetChild(3).GetComponent<RawImage>().enabled = false;
     }
 
     public void Click()
     {
-        //sum = a + b;
-        //Perevod(a);
-        //Perevod(b);
-        if ((a + b >= 0 && a + b <= 127) || (a + b < 0 && a + b > -128))
-        {
-            n1 = DecToBin(a);
-            n2 = DecToBin(b);
+        sum = (int)a + (int)b;
+        decSum.GetComponent<Text>().text = sum.ToString();
 
+        Debug.Log(sum);
+        if ((sum <= 127) && (sum >= -128))
+        {
+            overflow.SetActive(false);
+            n1 = CreateCode(a);
+            n2 = CreateCode(b);
+            OutputBinNum(n1, binNum1);
+            OutputBinNum(n2, binNum2);
+
+            line.enabled = true;
+
+            bool p = false;
             for (int i = 7; i != -1; i--)
             {
-                bool p = false;
-                res.Add(Adder(n1[i], n2[i], p).s);
+                SP_output spo = Adder(n1[i], n2[i], p);
+                res.Add(spo.s);
+                p = spo.p;
                 Debug.Log(res[res.Count - 1]);
             }
             while (res.Count != 8)
@@ -73,10 +91,44 @@ public class RR : MonoBehaviour
                 AS.time = 0.0f;
                 AS.Play();
             }
+            n1.Clear();
+            n2.Clear();
+            res.Clear();
         }
         else
         {
-            //ñäåëàòü òàáëè÷êó ïåğåïîëíåíèå
+            overflow.SetActive(true);
+        }
+    }
+
+    List<bool> CreateCode(int num)
+    {
+        List<bool> res = DecToBin(num); //ïğÿìîé êîä
+        if(num < 0)
+        {
+            Invert(res); //îáğàòíûé êîä
+
+            //äîïîëíèòåëüíûé êîä
+            List<bool> one = DecToBin(1);
+            bool p = false;
+            for (int i = 7; i != -1; i--)
+            {
+                SP_output spo = Adder(res[i], one[i], p);
+                res[i] = spo.s;
+                p = spo.p;
+            }
+        }
+        return res;
+    }
+
+    void Invert(List<bool> num)
+    {
+        for(int i = 0; i < num.Count; i++)
+        {
+            if (num[i])
+                num[i] = false;
+            else
+                num[i] = true;
         }
     }
 
@@ -87,9 +139,15 @@ public class RR : MonoBehaviour
         while(s > 0)
         {
             if (s % 2 == 0)
+            {
                 res.Add(false);
+                Debug.Log("0");
+            }
             else
+            {
                 res.Add(true);
+                Debug.Log("1");
+            }
             s /= 2;
         }
         while(res.Count != 8)
@@ -97,95 +155,63 @@ public class RR : MonoBehaviour
             res.Add(false);
         }
         res.Reverse();
+
+        Debug.Log("end");
         return res;
     }
+
     bool xor(bool a, bool b)
     {
         return (a || b) && (!(a && b));
     }
-    SP_output Adder(bool ai, bool bi, bool pi_1)
+   
+    SP_output Adder(bool ai, bool bi, bool pi)
     {
-        bool pi = (ai && bi) || (ai && pi_1) || (bi && pi_1);
-        bool si = (ai || bi || pi_1) && pi_1 || (ai && bi && pi_1);
+        bool si = (pi && ((!ai && !bi) || (ai && bi))) || (!pi && ((!ai && bi) || (ai && !bi))); // ÌÎß ÌÄÍÔ ËŞÁÈÌÀ ÎËÜÃÀ ÂÀÑÈËÜÅÂÍÀ ÏĞÈÂÅÒÈÊ ÍßÌÍßÌ
+        pi = (ai && bi) || (ai && pi) || (bi && pi); // ÏÅĞÅÕÎÄ ËÓ×ØÅ ÄÅËÀÒÜ ÏÎÑËÅ ĞÀÑ×ÅÒÀ ÎÑÍÎÂÍÎÃÎ ×ÈÑËÀ. ÒÀÊ ÇÀÍÈÌÀÅØÜ ÌÅÍÜØÅ ÌÅÑÒÀ È ÌÅÍÜØÅ ËÅÂÛÕ ÏÅĞÅÌÅÍÍÛÕ, ÏÎÍßË ÄÀ?
         SP_output res = new SP_output(si, pi);
         return res;
     }
 
-    /*SP_output half_adder(bool a, bool b)
+    void OutputBinNum(List<bool> num, Text title)
     {
-        bool s = xor(a, b);
-        bool p = a && b;
-        return new SP_output(s, p);
-    }
-
-    SP_output adder(bool a, bool b, bool pi)
-    {
-        SP_output ha1 = half_adder(a, b);
-        SP_output ha2 = half_adder(pi, ha1[0]);
-        bool s = ha2.s;
-        bool p = ha1.p || ha2.p;
-        return new SP_output(s, p);
-    }*/
-
-    List<bool> Perevod(int a)
-    {
-        int s = Math.Abs(a);
-        int count = 0;
-        List<bool> res = new List<bool>();
-        while(s > 0)
+        string s = "";
+        for(int i = 0; i < num.Count; i++)
         {
-            if(s % 2 == 0)
-                res[count] = false;
+            if (num[i] == false)
+                s += '0';
             else
-                res[count] = true;
-            count++;
-            s /= 2;
+                s += '1';
         }
-        res.Reverse();
-
-        /*if(binarySum.Length < go.Count)
-        {
-            for(int i = binarySum.Length; i != go.Count; i++)
-            {
-                binarySum = binarySum.Insert(0, "0");
-            }
-        }*/
-
-        /*if (sum >= 0)
-        {
-            binarySum = binarySum.Insert(0, "0");
-        }
-        else
-        {
-            binarySum = binarySum.Insert(0, "1");
-        }*/
-        Debug.Log(res);
-        return res;
+        title.text = s;
+        title.enabled = true;
     }
 
     public void OnReadInput1()
     {
         int.TryParse(if1.text, out int result);
-        int a = result;
+        a = result;
+        Debug.Log(a);
     }
 
     public void OnReadInput2()
     {
         int.TryParse(if2.text, out int result);
         b = result;
+        Debug.Log(b);
     }
 
     void ChangeZnak()
     {
         if (res[0] == false)
         {
-            znak.transform.GetChild(0).GetComponent<Image>().enabled = true;
-            znak.transform.GetChild(1).GetComponent<Image>().enabled = false;
+            znak.transform.GetChild(2).GetComponent<RawImage>().enabled = true;
+            znak.transform.GetChild(3).GetComponent<RawImage>().enabled = false;
         }
         else
         {
-            znak.transform.GetChild(1).GetComponent<Image>().enabled = true;
-            znak.transform.GetChild(0).GetComponent<Image>().enabled = false;
+            znak.transform.GetChild(2).GetComponent<RawImage>().enabled = false;
+            znak.transform.GetChild(3).GetComponent<RawImage>().enabled = true;
         }
     }
 
